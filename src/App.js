@@ -1,24 +1,21 @@
-import logo from './logo.svg';
-import './App.css';
+import "./css/App.css";
+import { Layout } from "./components/Layout";
+import { Web3ReactProvider } from "@web3-react/core";
+import { Web3Provider } from "@ethersproject/providers";
+import { ChakraProvider } from "@chakra-ui/react";
+import theme from "../src/lib/theme";
 
 function App() {
+  function getLibrary(provider) {
+    return new Web3Provider(provider);
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Web3ReactProvider getLibrary={getLibrary}>
+      <ChakraProvider theme={theme}>
+        <Layout></Layout>
+      </ChakraProvider>
+    </Web3ReactProvider>
   );
 }
 
