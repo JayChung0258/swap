@@ -4,7 +4,7 @@ const OtherPage = () => {
     const [data, setData] = useState(null);
     const [contractAddress, setContractAddress] = useState('');
     const [tokenId, setTokenId] = useState('');
-    const [walletAddress, setWalletAddress] = useState('');
+    const [collections, setcollections] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     function getDate() {
         fetch('http://localhost:3001/firebase/get')
@@ -15,9 +15,10 @@ const OtherPage = () => {
 
     function postDate() {
         const postData = {
+
+            collections,
             contractAddress,
             tokenId,
-            walletAddress,
         };
 
         fetch('http://localhost:3001/firebase/post', {
@@ -48,17 +49,27 @@ const OtherPage = () => {
                     <table style={styles.table}>
                         <thead>
                             <tr style={styles.tableRow}>
-                                <th style={styles.tableHeader}>collections/contract Address</th>
+                                <th style={styles.tableHeader}>collections</th>
+                                <th style={styles.tableHeader}>contract Address</th>
                                 <th style={styles.tableHeader}>token Id</th>
-                                <th style={styles.tableHeader}>wallet Address</th>
+                                <th style={styles.tableHeader}>URL</th>
                             </tr>
                         </thead>
                         <tbody>
                             {Object.entries(data).map(([key, item]) => (
                                 <tr key={key} style={styles.tableRow}>
+                                    <td style={styles.tableData}>{item.collections}</td>
                                     <td style={styles.tableData}>{item.contractAddress}</td>
                                     <td style={styles.tableData}>{item.tokenId}</td>
-                                    <td style={styles.tableData}>{item.walletAddress}</td>
+                                    <td style={styles.tableData}>
+                                        <a
+                                            href={`https://testnets.opensea.io/assets/${item.collections}/${item.contractAddress}/${item.tokenId}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            {`https://testnets.opensea.io/assets/${item.collections}/${item.contractAddress}/${item.tokenId}`}
+                                        </a>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -67,12 +78,26 @@ const OtherPage = () => {
             )}
 
             <div style={styles.inputContainer}>
-                <label htmlFor="contractAddress" style={styles.label}>
+                <label htmlFor="collections" style={styles.label}>
+                    collections:
+                </label>
+                <input
+                    type="text"
+                    id="collections"
+                    style={styles.input}
+                    value={collections}
+                    onChange={(e) => setcollections(e.target.value)}
+                />
+            </div>
+
+
+            <div style={styles.inputContainer}>
+                <label htmlFor="contract Address" style={styles.label}>
                     contract Address:
                 </label>
                 <input
                     type="text"
-                    id="contractAddress"
+                    id="ContractAddress"
                     style={styles.input}
                     value={contractAddress}
                     onChange={(e) => setContractAddress(e.target.value)}
@@ -80,8 +105,8 @@ const OtherPage = () => {
             </div>
 
             <div style={styles.inputContainer}>
-                <label htmlFor="tokenId" style={styles.label}>
-                    token Id:
+                <label htmlFor="wtokenId" style={styles.label}>
+                    tokenId:
                 </label>
                 <input
                     type="text"
@@ -89,19 +114,6 @@ const OtherPage = () => {
                     style={styles.input}
                     value={tokenId}
                     onChange={(e) => setTokenId(e.target.value)}
-                />
-            </div>
-
-            <div style={styles.inputContainer}>
-                <label htmlFor="walletAddress" style={styles.label}>
-                    wallet Address:
-                </label>
-                <input
-                    type="text"
-                    id="walletAddress"
-                    style={styles.input}
-                    value={walletAddress}
-                    onChange={(e) => setWalletAddress(e.target.value)}
                 />
             </div>
 
