@@ -20,7 +20,7 @@ import { useWeb3React } from "@web3-react/core";
 import { ethers } from "ethers";
 import { create } from "ipfs-http-client";
 import React, { useState } from "react";
-
+import axios from "axios";
 import { ItemType } from "../constants";
 import { abi } from "../lib/abi/abi";
 import config from "../lib/config.json";
@@ -34,6 +34,47 @@ import { Chain, isChain } from "../lib/chain";
 // }
 
 export const Request = () => {
+  const [firebaseData, setFirebaseData] = useState(null);
+
+  const handleCompareButtonClick = () => {
+    axios
+      .get("http://localhost:3001/firebase/get", {
+        params: {
+          nftContractAddress: nftContractAddress,
+        },
+      })
+      .then((response) => {
+        const data = response.data;
+        setFirebaseData(data);
+        console.log(data);
+
+        let matchFound = false;
+        Object.keys(data).forEach((key) => {
+          const contractAddress = data[key].contractAddress;
+          if (contractAddress === nftContractAddress) {
+            console.log("符合");
+            matchFound = true;
+            // 在這裡執行符合時的處理邏輯
+          }
+        });
+
+        if (matchFound) {
+          window.alert("有符合的交換資訊，請點選右上角公佈欄查詢");
+          // 在這裡執行符合時的處理邏輯
+        } else {
+          window.alert("沒有符合您的交換資訊");
+          // 在這裡執行不符合時的處理邏輯
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
+
+
+
+
   const [assetURI, setAssetURI] = useState("");
   const [ownerAddress, setOwnerAddress] = useState(
     "0x05B135Bed01fc637e9e94253FcB73082997D7Fee"
@@ -80,6 +121,7 @@ export const Request = () => {
   };
 
   const handleAssetURIChange = async (e) => {
+
     const inputValue = e.target.value;
     setAssetURI(inputValue);
     const [tokenId, nftContractAddress, network] = inputValue
@@ -214,11 +256,16 @@ export const Request = () => {
             <FormErrorMessage>{assetURIErrorMessage}</FormErrorMessage>
           </FormControl>
           <FormControl id="nftContractAddress" isRequired>
+
             <Input
               placeholder="NFT Contract Address"
               value={nftContractAddress}
               onChange={(e) => setNFTContractAddress(e.target.value)}
             />
+            <Button colorScheme="blue" onClick={handleCompareButtonClick}>
+              Check
+            </Button>
+
           </FormControl>
           <FormControl id="tokenId" isRequired>
             <Input
@@ -288,8 +335,11 @@ export const Request = () => {
               onClick={onCopy}
             />
           </Stack>
+
         </Box>
       )}
     </Box>
   );
+
 };
+
