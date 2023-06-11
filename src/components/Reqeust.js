@@ -20,15 +20,61 @@ import { useWeb3React } from "@web3-react/core";
 import { ethers } from "ethers";
 import { create } from "ipfs-http-client";
 import React, { useState } from "react";
-
+import axios from "axios";
 import { ItemType } from "../constants";
 import { abi } from "../lib/abi/abi";
 import config from "../lib/config.json";
 import { injected } from "../lib/injected";
 import { Chain, isChain } from "../lib/chain";
-// import { Buffer } from "buffer";
+
+// declare global {
+//   interface Window {
+//     ethereum: any;
+//   }
+// }
 
 export const Request = () => {
+  const [firebaseData, setFirebaseData] = useState(null);
+
+  const handleCompareButtonClick = () => {
+    axios
+      .get("http://localhost:3001/firebase/get", {
+        params: {
+          nftContractAddress: nftContractAddress,
+        },
+      })
+      .then((response) => {
+        const data = response.data;
+        setFirebaseData(data);
+        console.log(data);
+
+        let matchFound = false;
+        Object.keys(data).forEach((key) => {
+          const contractAddress = data[key].contractAddress;
+          if (contractAddress === nftContractAddress) {
+            console.log("符合");
+            matchFound = true;
+            // 在這裡執行符合時的處理邏輯
+          }
+        });
+
+        if (matchFound) {
+          window.alert("有符合的交換資訊，請點選右上角公佈欄查詢");
+          // 在這裡執行符合時的處理邏輯
+        } else {
+          window.alert("沒有符合您的交換資訊");
+          // 在這裡執行不符合時的處理邏輯
+        }
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
+
+
+
+
+
   const [assetURI, setAssetURI] = useState("");
   const [ownerAddress, setOwnerAddress] = useState(
     "0x05B135Bed01fc637e9e94253FcB73082997D7Fee"
@@ -45,8 +91,7 @@ export const Request = () => {
   const [tokenType2, setTokenType2] = useState();
   const [orderURI, setOrderURI] = useState("");
   const toast = useToast();
-  // const rpc = "https://mainnet.infura.io/v3/bec0d73480084555bb647f29c72fe941";
-  const rpc = "https://goerli.infura.io/v3/bec0d73480084555bb647f29c72fe941";
+  const rpc = "https://mainnet.infura.io/v3/bec0d73480084555bb647f29c72fe941";
   const provider = new ethers.providers.JsonRpcProvider(rpc);
   const { onCopy } = useClipboard(orderURI);
   const { activate, library, account } = useWeb3React();
@@ -76,6 +121,7 @@ export const Request = () => {
   };
 
   const handleAssetURIChange = async (e) => {
+
     const inputValue = e.target.value;
     setAssetURI(inputValue);
     const [tokenId, nftContractAddress, network] = inputValue
@@ -106,30 +152,12 @@ export const Request = () => {
   };
 
   const handleTokenType1 = (e) => {
-    switch (e.target.value) {
-      case "ERC20":
-        setTokenType1(ItemType.ERC20);
-        break;
-      case "ERC721":
-        setTokenType1(ItemType.ERC721);
-        break;
-      case "ERC1155":
-        setTokenType1(ItemType.ERC1155);
-        break;
-    }
+    const inputValue = e.target.value;
+    setTokenType1(inputValue);
   };
   const handleTokenType2 = (e) => {
-    switch (e.target.value) {
-      case "ERC20":
-        setTokenType2(ItemType.ERC20);
-        break;
-      case "ERC721":
-        setTokenType2(ItemType.ERC721);
-        break;
-      case "ERC1155":
-        setTokenType2(ItemType.ERC1155);
-        break;
-    }
+    const inputValue = e.target.value;
+    setTokenType2(inputValue);
   };
 
   const createOrder = async () => {
@@ -148,35 +176,34 @@ export const Request = () => {
       return;
     }
     const seaport = new Seaport(library.getSigner(account), config.seaportURL);
-
+    // const client = new Client(create(config.ipfsURL));
+    const assets = [
+      {
+        contractAddress: nftContractAddress,
+        tokenId,
+        chain: network,
+      },
+    ];
+    const types = [tokenType1, tokenType2];
+    const contracts = [contractAddress1, contractAddress2];
+    const tokenIds = [tokenId1, tokenId2];
     const orderData = {
-      offer: [
-        {
-          itemType: tokenType1,
-          token: contractAddress1,
-          identifier: tokenId1,
-        },
-        // {
-        //   amount: ethers.utils.parseEther("0.0001").toString(),
-        //   gasLimit: 100000,
-        // },
-      ],
-      consideration: [
-        {
-          itemType: ItemType.ERC721,
-          token: nftContractAddress,
-          identifier: tokenId,
-          recipient: account,
-        },
-      ],
+      assets,
+      types,
+      contracts,
+      tokenIds,
+      uri: assetURI,
+      ownerAddress,
     };
     try {
-      const { executeAllActions } = await seaport.createOrder(orderData, account);
+      const order = await seaport.createOrder(orderData);
+      // const orderURI = await client.get(order.asset.assetContract.address);
+      setOrderURI(orderURI);
       toast({
         title: "Order created",
         description: (
           <Box>
-            <Text>Order created successfully. Order ID: test</Text>
+            <Text>Order created successfully. Order ID: {order.orderId}</Text>
             <Stack direction="row" mt={2}>
               <Link href={orderURI} isExternal>
                 <Button size="sm" colorScheme="blue" leftIcon={<CopyIcon />}>
@@ -195,19 +222,6 @@ export const Request = () => {
         duration: 5000,
         isClosable: true,
       });
-
-      const order = await executeAllActions();
-
-      console.log(order)
-      if (account == ownerAddress) {
-        const { executeAllActions: executeAllFulfillActions } =
-          await seaport.fulfillOrder({
-            order,
-            accountAddress: ownerAddress,
-          });
-        const transaction = executeAllFulfillActions();
-      }
-
     } catch (error) {
       toast({
         title: "Error",
@@ -242,11 +256,16 @@ export const Request = () => {
             <FormErrorMessage>{assetURIErrorMessage}</FormErrorMessage>
           </FormControl>
           <FormControl id="nftContractAddress" isRequired>
+
             <Input
               placeholder="NFT Contract Address"
               value={nftContractAddress}
               onChange={(e) => setNFTContractAddress(e.target.value)}
             />
+            <Button colorScheme="blue" onClick={handleCompareButtonClick}>
+              Check
+            </Button>
+
           </FormControl>
           <FormControl id="tokenId" isRequired>
             <Input
@@ -316,8 +335,11 @@ export const Request = () => {
               onClick={onCopy}
             />
           </Stack>
+
         </Box>
       )}
     </Box>
   );
+
 };
+

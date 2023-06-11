@@ -10,8 +10,8 @@ import {
   useColorMode,
 } from "@chakra-ui/react";
 import { useWeb3React } from "@web3-react/core";
-
 import { injected } from "../lib/injected";
+import { Link as RouterLink } from 'react-router-dom';
 
 export const Header = () => {
   const { activate, account, deactivate } = useWeb3React();
@@ -34,6 +34,7 @@ export const Header = () => {
           <Text fontSize={"lg"} fontWeight={"bold"}>
             OTC Swap
           </Text>
+
         </Link>
         <Flex gap={"16px"}>
           {!account ? (
@@ -58,6 +59,9 @@ export const Header = () => {
             icon={colorMode === "light" ? <MoonIcon /> : <SunIcon />}
             onClick={toggleColorMode}
           />
+          <RouterLink to="/other-page">
+            公佈欄
+          </RouterLink>
         </Flex>
       </Flex>
     </Box>
