@@ -26,12 +26,7 @@ import { abi } from "../lib/abi/abi";
 import config from "../lib/config.json";
 import { injected } from "../lib/injected";
 import { Chain, isChain } from "../lib/chain";
-
-// declare global {
-//   interface Window {
-//     ethereum: any;
-//   }
-// }
+// import { Buffer } from "buffer";
 
 export const Request = () => {
   const [assetURI, setAssetURI] = useState("");
@@ -50,7 +45,8 @@ export const Request = () => {
   const [tokenType2, setTokenType2] = useState();
   const [orderURI, setOrderURI] = useState("");
   const toast = useToast();
-  const rpc = "https://mainnet.infura.io/v3/bec0d73480084555bb647f29c72fe941";
+  // const rpc = "https://mainnet.infura.io/v3/bec0d73480084555bb647f29c72fe941";
+  const rpc = "https://goerli.infura.io/v3/bec0d73480084555bb647f29c72fe941";
   const provider = new ethers.providers.JsonRpcProvider(rpc);
   const { onCopy } = useClipboard(orderURI);
   const { activate, library, account } = useWeb3React();
@@ -110,12 +106,30 @@ export const Request = () => {
   };
 
   const handleTokenType1 = (e) => {
-    const inputValue = e.target.value;
-    setTokenType1(inputValue);
+    switch (e.target.value) {
+      case "ERC20":
+        setTokenType1(ItemType.ERC20);
+        break;
+      case "ERC721":
+        setTokenType1(ItemType.ERC721);
+        break;
+      case "ERC1155":
+        setTokenType1(ItemType.ERC1155);
+        break;
+    }
   };
   const handleTokenType2 = (e) => {
-    const inputValue = e.target.value;
-    setTokenType2(inputValue);
+    switch (e.target.value) {
+      case "ERC20":
+        setTokenType2(ItemType.ERC20);
+        break;
+      case "ERC721":
+        setTokenType2(ItemType.ERC721);
+        break;
+      case "ERC1155":
+        setTokenType2(ItemType.ERC1155);
+        break;
+    }
   };
 
   const createOrder = async () => {
@@ -134,34 +148,35 @@ export const Request = () => {
       return;
     }
     const seaport = new Seaport(library.getSigner(account), config.seaportURL);
-    // const client = new Client(create(config.ipfsURL));
-    const assets = [
-      {
-        contractAddress: nftContractAddress,
-        tokenId,
-        chain: network,
-      },
-    ];
-    const types = [tokenType1, tokenType2];
-    const contracts = [contractAddress1, contractAddress2];
-    const tokenIds = [tokenId1, tokenId2];
+
     const orderData = {
-      assets,
-      types,
-      contracts,
-      tokenIds,
-      uri: assetURI,
-      ownerAddress,
+      offer: [
+        {
+          itemType: tokenType1,
+          token: contractAddress1,
+          identifier: tokenId1,
+        },
+        // {
+        //   amount: ethers.utils.parseEther("0.0001").toString(),
+        //   gasLimit: 100000,
+        // },
+      ],
+      consideration: [
+        {
+          itemType: ItemType.ERC721,
+          token: nftContractAddress,
+          identifier: tokenId,
+          recipient: account,
+        },
+      ],
     };
     try {
-      const order = await seaport.createOrder(orderData);
-      // const orderURI = await client.get(order.asset.assetContract.address);
-      setOrderURI(orderURI);
+      const { executeAllActions } = await seaport.createOrder(orderData, account);
       toast({
         title: "Order created",
         description: (
           <Box>
-            <Text>Order created successfully. Order ID: {order.orderId}</Text>
+            <Text>Order created successfully. Order ID: test</Text>
             <Stack direction="row" mt={2}>
               <Link href={orderURI} isExternal>
                 <Button size="sm" colorScheme="blue" leftIcon={<CopyIcon />}>
@@ -180,6 +195,19 @@ export const Request = () => {
         duration: 5000,
         isClosable: true,
       });
+
+      const order = await executeAllActions();
+
+      console.log(order)
+      if (account == ownerAddress) {
+        const { executeAllActions: executeAllFulfillActions } =
+          await seaport.fulfillOrder({
+            order,
+            accountAddress: ownerAddress,
+          });
+        const transaction = executeAllFulfillActions();
+      }
+
     } catch (error) {
       toast({
         title: "Error",

@@ -7,7 +7,7 @@
     "exproler": "https://etherscan.io/"
   },
   "goerli": {
-    "chainId": 4,
+    "chainId": 5,
     "contracts": {
       "kaguraswap": "0x3fE11c0CCD9897f6cfe990916208370d1b6f98D6"
     },
